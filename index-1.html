@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"/>
+  <meta name="theme-color" content="#080808"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black"/>
+  <meta name="apple-mobile-web-app-title" content="OffGrid"/>
+  <link rel="manifest" href="manifest.json"/>
+  <title>OffGrid — Chat Without Internet</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Clash+Display:wght@400;600;700&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+
+<!-- SPLASH -->
+<div id="splash" class="splash">
+  <div class="splash-bg"></div>
+  <div class="splash-content">
+    <div class="splash-rings">
+      <div class="ring r1"></div>
+      <div class="ring r2"></div>
+      <div class="ring r3"></div>
+      <div class="splash-logo-icon">📡</div>
+    </div>
+    <div class="splash-title">OFFGRID</div>
+    <div class="splash-tagline">CHAT WITHOUT INTERNET</div>
+    <div class="splash-progress"><div class="splash-fill" id="splashFill"></div></div>
+    <div class="splash-status" id="splashStatus">Initializing...</div>
+  </div>
+</div>
+
+<!-- ONBOARDING (first time) -->
+<div id="onboarding" class="screen hidden">
+  <div class="onboard-wrap">
+    <div class="onboard-icon">📡</div>
+    <div class="onboard-title">OFFGRID</div>
+    <div class="onboard-sub">No internet. No servers. No tracking.<br/>Just you and the people near you.</div>
+    <div class="onboard-modes">
+      <div class="om-card">
+        <span class="om-icon">🔵</span>
+        <span class="om-label">Bluetooth</span>
+        <span class="om-desc">~30m range</span>
+      </div>
+      <div class="om-card">
+        <span class="om-icon">📶</span>
+        <span class="om-label">WiFi Direct</span>
+        <span class="om-desc">Same network</span>
+      </div>
+      <div class="om-card">
+        <span class="om-icon">📷</span>
+        <span class="om-label">QR Connect</span>
+        <span class="om-desc">Instant pair</span>
+      </div>
+    </div>
+    <div class="onboard-form">
+      <label class="ob-label">YOUR NAME</label>
+      <input id="obName" class="ob-input" placeholder="e.g. Dax" maxlength="30"/>
+      <label class="ob-label">YOUR PHONE NUMBER</label>
+      <input id="obPhone" class="ob-input" placeholder="+91 98765 43210" type="tel" maxlength="15"/>
+      <div style="font-size:9px;color:var(--t3);font-family:'Space Mono',monospace;line-height:1.7;text-align:center;">
+        🔒 Stored only on your device.<br/>Never shared with any server.
+      </div>
+      <button class="ob-btn" onclick="completeOnboarding()">START CHATTING →</button>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="app" class="app hidden">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <!-- Profile -->
+    <div class="my-profile" onclick="showProfileModal()">
+      <div class="my-avatar" id="myAvatar">DA</div>
+      <div class="my-info">
+        <div class="my-name" id="myName">You</div>
+        <div class="my-id" id="myId">@offgrid</div>
+      </div>
+      <div class="my-status-dot" id="myStatusDot"></div>
+    </div>
+
+    <!-- Connection modes -->
+    <div class="sidebar-section">
+      <div class="ss-label">CONNECTION</div>
+      <div class="conn-modes" id="connModes">
+        <div class="conn-mode" id="cm-wifi" data-mode="wifi">
+          <div class="cm-left">
+            <div class="cm-icon">📶</div>
+            <div class="cm-text">
+              <div class="cm-name">WiFi Direct</div>
+              <div class="cm-desc" id="wifi-desc">Scanning...</div>
+            </div>
+          </div>
+          <div class="cm-toggle" id="wifi-toggle" onclick="toggleMode('wifi')"></div>
+        </div>
+        <div class="conn-mode" id="cm-bt" data-mode="bt">
+          <div class="cm-left">
+            <div class="cm-icon">🔵</div>
+            <div class="cm-text">
+              <div class="cm-name">Bluetooth</div>
+              <div class="cm-desc" id="bt-desc">Tap to scan</div>
+            </div>
+          </div>
+          <div class="cm-toggle" id="bt-toggle" onclick="toggleMode('bt')"></div>
+        </div>
+        <div class="conn-mode" id="cm-qr" data-mode="qr">
+          <div class="cm-left">
+            <div class="cm-icon">📷</div>
+            <div class="cm-text">
+              <div class="cm-name">QR Connect</div>
+              <div class="cm-desc">Scan to pair instantly</div>
+            </div>
+          </div>
+          <div class="cm-action" onclick="showQRModal()">OPEN →</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Contacts -->
+    <div class="sidebar-section flex-fill">
+      <div class="ss-label">
+        CHATS
+        <button class="ss-add" onclick="showAddContact()">＋</button>
+      </div>
+      <div class="contact-list" id="contactList">
+        <div class="empty-contacts">
+          <div style="font-size:28px;margin-bottom:8px;">👥</div>
+          <div>No chats yet</div>
+          <div style="font-size:10px;color:var(--t3);margin-top:4px;">Tap + to add contact<br/>or scan their QR code</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- SIDEBAR BACKDROP -->
+  <div class="sb-backdrop hidden" id="sbBackdrop" onclick="closeSidebar()"></div>
+
+  <!-- MAIN -->
+  <main class="main" id="main">
+
+    <!-- TOPBAR -->
+    <div class="topbar">
+      <button class="topbar-menu" onclick="toggleSidebar()">
+        <span></span><span></span><span></span>
+      </button>
+      <div class="topbar-center" id="topbarCenter">
+        <div class="topbar-name">OffGrid</div>
+        <div class="topbar-sub" id="topbarSub">Select a chat</div>
+      </div>
+      <div class="topbar-right">
+        <button class="tb-btn" id="tbQr" onclick="showContactQR()" style="display:none">📷</button>
+        <button class="tb-btn" onclick="showNetworkPanel()">📶</button>
+      </div>
+    </div>
+
+    <!-- CHAT AREA -->
+    <div class="chat-area" id="chatArea">
+
+      <!-- EMPTY STATE -->
+      <div class="empty-state" id="emptyState">
+        <div class="es-rings">
+          <div class="es-ring r1"></div>
+          <div class="es-ring r2"></div>
+          <div class="es-icon">📡</div>
+        </div>
+        <div class="es-title">NO SIGNAL?<br/>NO PROBLEM.</div>
+        <div class="es-desc">OffGrid connects you to nearby people<br/>using Bluetooth, WiFi Direct, or QR pairing.<br/>Zero internet. Zero servers.</div>
+        <button class="es-btn" onclick="showAddContact()">+ ADD FIRST CONTACT</button>
+      </div>
+
+      <!-- MESSAGES -->
+      <div class="messages hidden" id="messages"></div>
+    </div>
+
+    <!-- INPUT -->
+    <div class="input-wrap hidden" id="inputWrap">
+      <div class="input-channel-bar" id="inputChannelBar">
+        <span class="icb-dot" id="icbDot"></span>
+        <span id="icbText">No active connection</span>
+      </div>
+      <div class="input-row">
+        <button class="inp-btn" onclick="showQRModal()">📷</button>
+        <textarea id="msgInput" class="msg-inp" placeholder="Message..." rows="1"
+          onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+        <button class="send-btn" onclick="sendMessage()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        </button>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ===== MODALS ===== -->
+
+<!-- QR Modal -->
+<div class="modal-bg hidden" id="qrModal">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-title">QR Connect</div>
+      <button class="modal-x" onclick="closeModal('qrModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="qr-tabs">
+        <button class="qr-tab active" id="tabMyQr" onclick="switchQrTab('my')">MY QR</button>
+        <button class="qr-tab" id="tabScanQr" onclick="switchQrTab('scan')">SCAN</button>
+      </div>
+      <!-- My QR -->
+      <div id="myQrPanel">
+        <div class="qr-desc">Let others scan this to connect with you</div>
+        <div class="qr-box" id="qrBox"></div>
+        <div class="qr-id" id="qrIdText"></div>
+        <button class="modal-btn" onclick="shareMyQR()">Share QR Code</button>
+      </div>
+      <!-- Scan QR -->
+      <div id="scanQrPanel" class="hidden">
+        <div class="qr-desc">Scan a contact's QR code to connect</div>
+        <div class="scan-area" id="scanArea">
+          <video id="scanVideo" autoplay playsinline></video>
+          <div class="scan-overlay">
+            <div class="scan-corner tl"></div>
+            <div class="scan-corner tr"></div>
+            <div class="scan-corner bl"></div>
+            <div class="scan-corner br"></div>
+            <div class="scan-line"></div>
+          </div>
+        </div>
+        <div class="scan-status" id="scanStatus">Point camera at QR code</div>
+        <button class="modal-btn" onclick="startScan()">📷 Start Camera</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Add Contact Modal -->
+<div class="modal-bg hidden" id="addContactModal">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-title">Add Contact</div>
+      <button class="modal-x" onclick="closeModal('addContactModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <label class="field-label">NAME</label>
+      <input class="field-input" id="acName" placeholder="Contact name"/>
+      <label class="field-label">PHONE NUMBER</label>
+      <input class="field-input" id="acId" placeholder="+91 98765 43210" type="tel"/>
+      <div style="font-size:9px;color:var(--t3);font-family:'Space Mono',monospace;line-height:1.7;text-align:center;">
+        Phone number = their OffGrid ID
+      </div>
+      <div class="or-divider">— or —</div>
+      <button class="modal-btn outline" onclick="switchToScan()">📷 Scan Their QR Code</button>
+      <button class="modal-btn" onclick="addContact()">Add Contact</button>
+    </div>
+  </div>
+</div>
+
+<!-- Network Panel -->
+<div class="modal-bg hidden" id="networkModal">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-title">Network Status</div>
+      <button class="modal-x" onclick="closeModal('networkModal')">✕</button>
+    </div>
+    <div class="modal-body" id="networkBody"></div>
+  </div>
+</div>
+
+<!-- Profile Modal -->
+<div class="modal-bg hidden" id="profileModal">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-title">My Profile</div>
+      <button class="modal-x" onclick="closeModal('profileModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="profile-avatar-big" id="profileAvatarBig"></div>
+      <label class="field-label">YOUR NAME</label>
+      <input class="field-input" id="profileName" placeholder="Your name"/>
+      <label class="field-label">PHONE NUMBER (readonly)</label>
+      <input class="field-input" id="profileId" readonly style="opacity:0.5"/>
+      <button class="modal-btn" onclick="saveProfile()">Save</button>
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
